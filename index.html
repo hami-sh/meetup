@@ -1,136 +1,108 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Griftless</title>
-    <style>
-        body {
-            font-family: 'SF Mono', Menlo, Monaco, Consolas, monospace;
-            line-height: 1.6;
-            margin: 0;
-            padding: 0;
-            background-color: #000000;
-            color: #ffffff;
-        }
-        header {
-            background-color: #111111;
-            color: #ffffff;
-            text-align: center;
-            padding: 3rem 1rem;
-        }
-        header p {
-            opacity: 0.9;
-            font-size: 1.1rem;
-        }
-        nav {
-            background-color: #111111;
-            padding: 1rem;
-            text-align: center;
-            border-top: 1px solid #333;
-            border-bottom: 1px solid #333;
-        }
-        nav a {
-            color: #ffffff;
-            text-decoration: none;
-            margin: 0 1rem;
-            padding: 0.5rem 1rem;
-            border-radius: 3px;
-            transition: background-color 0.2s;
-        }
-        nav a:hover {
-            background-color: #333;
-        }
-        .container {
-            max-width: 800px;
-            margin: 2rem auto;
-            padding: 0 1rem;
-        }
-        section {
-            margin-bottom: 3rem;
-            background-color: #111111;
-            padding: 2rem;
-            border-radius: 5px;
-            border: 1px solid #333;
-        }
-        .event {
-            border-left: 4px solid #ffffff;
-            margin: 1rem 0;
-            padding: 1rem 1.5rem;
-            background-color: rgba(255, 255, 255, 0.05);
-        }
-        .principles {
-            list-style: none;
-            padding: 0;
-        }
-        .principles li {
-            margin-bottom: 1rem;
-            padding-left: 1.5rem;
-            position: relative;
-        }
-        .principles li::before {
-            content: "→";
-            position: absolute;
-            left: 0;
-            color: #ffffff;
-        }
-        h2 {
-            border-bottom: 2px solid #333;
-            padding-bottom: 0.5rem;
-        }
-        strong {
-            color: #ffffff;
-        }
-    </style>
-</head>
-<body>
-    <header>
-        <h1>Griftless</h1>
-        <p>Engineering discussions without the hustle culture.</p>
-    </header>
-    <nav>
-        <a href="#about">About</a>
-        <a href="#events">Events</a>
-        <a href="#contact">Contact</a>
-    </nav>
-    <div class="container">
-        <section id="about">
-            <h2>About Us</h2>
-            <p>A meetup getting back to the roots of why we love engineering. No "build in public" / "AI" / "hustle culture" <b>grifting</b> -- just sharing knowledge amongst likeminded (and motivated) individuals.</p>
-            <h3>What this is:</h3>
-            <ul>
-                <li>Technical discussions in an low-key setting</li>
-                <li>Show something you learned or built recently</li>
-                <li>Share problems you solved (or are stuck on)</li>
-                <li>Talk about tools, patterns, or languages you find interesting</li>
-                <li>Actual engineering, not entrepreneurship</li>
-            </ul>
-
-            <h3>What this isn't:</h3>
-            <ul>
-                <li>No pitch practice</li>
-                <li>No "leveraging AI"</li>
-                <li>No "bootcamps" or "anyone can code"</li>
-                <li>No hustle culture</li>
-            </ul>
-
-            <br>
-            <h3><i>Most importantly, you must know someone to join</i></h3>
-        </section>
-        <section id="events">
-            <h2>Upcoming Events</h2>
-            <div class="event">
-                <h3>Next Meetup</h3>
-                <p><strong>Date:</strong> TBD</p>
-                <p><strong>Time:</strong> TBD</p>
-                <p><strong>Location:</strong> Provided privately to members.</p>
-            </div>
-        </section>
-        <section id="contact">
-            <h2>Contact Us</h2>
-            <p>Email: hamishgrahambultitude@gmail.com</p>
-            <p>Note that joining is on an invite only basis. Email me if you think you fit the bill otherwise.</p>
-        </section>
-    </div>
-</body>
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Griftless</title>
+        <link rel="stylesheet" href="reset.css">
+        <link rel="stylesheet" href="index.css">
+    </head>
+    <body>
+        <header>
+            <table class="header">
+                <tbody><tr>
+                  <td colspan="2" rowspan="2" class="width-auto">
+                    <h1 class="title">Griftless</h1>
+                    <span class="subtitle">Engineering discussions without the hustle culture</span>
+                  </td>
+                  <th>Version</th>
+                  <td class="width-min">v0.0.1</td>
+                </tr>
+                <tr>
+                  <th>Updated</th>
+                  <td class="width-min"><time style="white-space: pre;">2024-10-22</time></td>
+                </tr>
+                <tr>
+                  <th class="width-min">Author</th>
+                  <td class="width-auto"><a href="https://hame.page"><cite>Hamish Bultitude</cite></a></td>
+                  <th class="width-min">Next</th>
+                  <td>TBD</td>
+                </tr>
+              </tbody></table>
+        </header>
+        <nav>
+            <a href="#about">About</a>
+            <a href="#events">Events</a>
+            <a href="#contact">Contact</a>
+        </nav>
+        <div class="container">
+            <section id="about">
+                <h2>About Us</h2>
+                <p>A meetup getting back to the roots of why we love engineering. No "build in public" / "AI" / "hustle culture"
+                    <b>grifting</b> -- just sharing knowledge amongst likeminded (and motivated) individuals.
+                </p>
+                <h3>What this is:</h3>
+                <ul>
+                    <li>Technical discussions in an low-key setting</li>
+                    <li>Show something you learned or built recently</li>
+                    <li>Share problems you solved (or are stuck on)</li>
+                    <li>Talk about tools, patterns, or languages you find interesting</li>
+                    <li>Actual engineering, not entrepreneurship</li>
+                </ul>
+                <h3>What this isn't:</h3>
+                <ul>
+                    <li>No pitch practice</li>
+                    <li>No "leveraging AI"</li>
+                    <li>No "bootcamps" or "anyone can code"</li>
+                    <li>No hustle culture</li>
+                </ul>
+                <h3>Most importantly, you must know someone to join</h3>
+            </section>
+            <hr></hr>
+            <section id="events">
+                <h2>Events</h2>
+                <div class="event">
+                    <p>
+                        <strong>Location:</strong> Provided privately to members.
+                    </p>
+                </div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th class="width-min">
+                                Meetup No.
+                            </th>
+                            <th class="width-min">
+                                Date
+                            </th>
+                            <th class="width-min">
+                                Time
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>
+                                1
+                            </td>
+                            <td>
+                                TBD
+                            </td>
+                            <td>
+                                TBD
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </section>
+            <hr>
+            <section id="contact">
+                <h2>Contact</h2>
+                <p>Email: hamishgrahambultitude@gmail.com</p>
+                <p>Note that joining is on an invite only basis. Email me if you think you fit the bill otherwise.</p>
+            </section>
+            <hr>
+            Thanks to <a href="https://github.com/owickstrom/the-monospace-web">github.com/owickstrom/the-monospace-web</a> for the css.
+        </div>
+    </body>
 </html>
