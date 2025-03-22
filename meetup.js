@@ -891,6 +891,28 @@ const HTML_CONTENT = `<!DOCTYPE html>
         <link rel="stylesheet" href="reset.css">
         <link rel="stylesheet" href="index.css">
         <link rel="icon" href="favicon.ico" type="image/x-icon">
+        <style>
+            .screensaver-container {
+                position: relative;
+                width: 100%;
+                height: 200px;
+                border: var(--border-thickness) solid var(--text-color);
+                overflow: hidden;
+                background-color: var(--background-color-alt);
+                margin-top: 15px;
+            }
+            
+            .participant-name {
+                position: absolute;
+                padding: 5px 10px;
+                background-color: var(--background-color);
+                border: var(--border-thickness) solid var(--text-color);
+                border-radius: 4px;
+                white-space: nowrap;
+                font-weight: var(--font-weight-medium);
+                transition: color 0.5s;
+            }
+        </style>
     </head>
     <body>
         <header>
@@ -902,11 +924,11 @@ const HTML_CONTENT = `<!DOCTYPE html>
                     <span class="subtitle">Engineering discussions without the hustle culture</span>
                   </td>
                   <th>Version</th>
-                  <td class="width-min">v0.0.1</td>
+                  <td class="width-min">v1.0.0</td>
                 </tr>
                 <tr>
                   <th>Updated</th>
-                  <td class="width-min"><time datetime="2024-10-22">2024-10-22</time></td>
+                  <td class="width-min"><time datetime="2025-03-23">2025-03-23</time></td>
                 </tr>
                 <tr>
                   <th class="width-min">Author</th>
@@ -1052,7 +1074,9 @@ const HTML_CONTENT = `<!DOCTYPE html>
                     
                     <div class="participants">
                         <h3>Currently Registered:</h3>
-                        <div id="participant-list" class="participant-list">Loading...</div>
+                        <div id="screensaver-container" class="screensaver-container">
+                            <!-- Participant names will be animated here -->
+                        </div>
                     </div>
                 </div>
             </section>
@@ -1072,9 +1096,16 @@ const HTML_CONTENT = `<!DOCTYPE html>
             document.addEventListener('DOMContentLoaded', () => {
                 const registrationForm = document.getElementById('registration-form');
                 const connectionStatus = document.getElementById('connection-status');
-                const participantList = document.getElementById('participant-list');
+                const screensaverContainer = document.getElementById('screensaver-container');
                 const isSpeakerCheckbox = document.getElementById('is-speaker');
                 const speakerFields = document.getElementById('speaker-fields');
+                
+                let participants = [];
+                let participantElements = [];
+                const colors = [
+                    '#FF0000', '#00FF00', '#0000FF', '#FFFF00', 
+                    '#FF00FF', '#00FFFF', '#FFA500', '#800080'
+                ];
                 
                 // Toggle speaker fields visibility
                 isSpeakerCheckbox.addEventListener('change', function() {
@@ -1144,6 +1175,67 @@ const HTML_CONTENT = `<!DOCTYPE html>
                     }
                 });
                 
+                // Create and update the DVD screensaver for participant names
+                function updateDvdScreensaver() {
+                    // Clear the container
+                    while (screensaverContainer.firstChild) {
+                        screensaverContainer.removeChild(screensaverContainer.firstChild);
+                    }
+                    participantElements = [];
+                    
+                    if (participants.length === 0) {
+                        const placeholder = document.createElement('div');
+                        placeholder.textContent = 'No registrations yet.';
+                        placeholder.style.position = 'absolute';
+                        placeholder.style.top = '50%';
+                        placeholder.style.left = '50%';
+                        placeholder.style.transform = 'translate(-50%, -50%)';
+                        screensaverContainer.appendChild(placeholder);
+                        return;
+                    }
+                    
+                    // Create elements for each participant
+                    participants.forEach((participant, index) => {
+                        const element = document.createElement('div');
+                        element.className = 'participant-name';
+                        element.textContent = participant.name;
+                        element.style.color = colors[index % colors.length];
+                        
+                        // Random starting position
+                        const containerWidth = screensaverContainer.clientWidth;
+                        const containerHeight = screensaverContainer.clientHeight;
+                        
+                        // Store the element with its movement data
+                        participantElements.push({
+                            element,
+                            x: Math.random() * (containerWidth - 100),
+                            y: Math.random() * (containerHeight - 30),
+                            speedX: (Math.random() * 0.5 + 0.2) * (Math.random() > 0.5 ? 1 : -1),
+                            speedY: (Math.random() * 0.5 + 0.2) * (Math.random() > 0.5 ? 1 : -1),
+                            width: 0,
+                            height: 0
+                        });
+                        
+                        screensaverContainer.appendChild(element);
+                    });
+                    
+                    // Get the dimensions of each element after they've been added to the DOM
+                    setTimeout(() => {
+                        participantElements.forEach(item => {
+                            item.width = item.element.offsetWidth;
+                            item.height = item.element.offsetHeight;
+                        });
+                        
+                        if (!animationRunning) {
+                            animationRunning = true;
+                            animateNames();
+                        }
+                    }, 0);
+                }
+                
+                let animationRunning = false;
+                let previousRegistrations = [];
+                
                 // Initialize SSE connection for real-time updates
                 function initEventSource() {
                     connectionStatus.textContent = 'Connecting...';
@@ -1159,7 +1251,83 @@ const HTML_CONTENT = `<!DOCTYPE html>
                             const data = JSON.parse(event.data);
                             
                             if (data.registrations) {
-                                updateParticipantList(data.registrations);
+                                // Check if we're just getting new registrations or a full refresh
+                                const newParticipants = data.registrations;
+                                
+                                if (previousRegistrations.length === 0) {
+                                    // First load
+                                    participants = newParticipants;
+                                    updateDvdScreensaver();
+                                } else if (newParticipants.length !== previousRegistrations.length) {
+                                    // The registration count changed, update but preserve animations
+                                    const existingElements = {};
+                                    participantElements.forEach(item => {
+                                        const name = item.element.textContent;
+                                        existingElements[name] = {
+                                            x: item.x,
+                                            y: item.y,
+                                            speedX: item.speedX,
+                                            speedY: item.speedY
+                                        };
+                                    });
+                                    
+                                    participants = newParticipants;
+                                    
+                                    // Clear container but keep animation state
+                                    while (screensaverContainer.firstChild) {
+                                        screensaverContainer.removeChild(screensaverContainer.firstChild);
+                                    }
+                                    participantElements = [];
+                                    
+                                    // Recreate elements but maintain positions for existing ones
+                                    participants.forEach((participant, index) => {
+                                        const element = document.createElement('div');
+                                        element.className = 'participant-name';
+                                        element.textContent = participant.name;
+                                        element.style.color = colors[index % colors.length];
+                                        
+                                        const containerWidth = screensaverContainer.clientWidth;
+                                        const containerHeight = screensaverContainer.clientHeight;
+                                        
+                                        // Use existing data if we have it
+                                        if (existingElements[participant.name]) {
+                                            const existing = existingElements[participant.name];
+                                            participantElements.push({
+                                                element,
+                                                x: existing.x,
+                                                y: existing.y,
+                                                speedX: existing.speedX,
+                                                speedY: existing.speedY,
+                                                width: 0,
+                                                height: 0
+                                            });
+                                        } else {
+                                            // New participant, create new data
+                                            participantElements.push({
+                                                element,
+                                                x: Math.random() * (containerWidth - 100),
+                                                y: Math.random() * (containerHeight - 30),
+                                                speedX: (Math.random() * 0.5 + 0.2) * (Math.random() > 0.5 ? 1 : -1),
+                                                speedY: (Math.random() * 0.5 + 0.2) * (Math.random() > 0.5 ? 1 : -1),
+                                                width: 0,
+                                                height: 0
+                                            });
+                                        }
+                                        
+                                        screensaverContainer.appendChild(element);
+                                    });
+                                    
+                                    // Update element dimensions
+                                    setTimeout(() => {
+                                        participantElements.forEach(item => {
+                                            item.width = item.element.offsetWidth;
+                                            item.height = item.element.offsetHeight;
+                                        });
+                                    }, 0);
+                                }
+                                
+                                // Store current list for next comparison
+                                previousRegistrations = [...newParticipants];
                             }
                         } catch (e) {
                             console.error('Error parsing event data:', e);
@@ -1175,22 +1343,52 @@ const HTML_CONTENT = `<!DOCTYPE html>
                     return eventSource;
                 }
                 
-                // Update the participant list in the UI
-                function updateParticipantList(registrations) {
-                    if (registrations.length === 0) {
-                        participantList.textContent = 'No registrations yet.';
-                        return;
-                    }
+                // Animate the names like a DVD screensaver
+                function animateNames() {
+                    const containerWidth = screensaverContainer.clientWidth;
+                    const containerHeight = screensaverContainer.clientHeight;
                     
-                    let html = '';
-                    for (let i = 0; i < registrations.length; i++) {
-                        html += "<div>" + registrations[i].name + "</div>";
-                    }
-                    participantList.innerHTML = html;
+                    participantElements.forEach(item => {
+                        // Move the element
+                        item.x += item.speedX;
+                        item.y += item.speedY;
+                        
+                        // Bounce off the walls
+                        if (item.x <= 0 || (item.x + item.width) >= containerWidth) {
+                            item.speedX *= -1;
+                            item.x = Math.max(0, Math.min(item.x, containerWidth - item.width));
+                            item.element.style.color = colors[Math.floor(Math.random() * colors.length)];
+                        }
+                        
+                        if (item.y <= 0 || (item.y + item.height) >= containerHeight) {
+                            item.speedY *= -1;
+                            item.y = Math.max(0, Math.min(item.y, containerHeight - item.height));
+                            item.element.style.color = colors[Math.floor(Math.random() * colors.length)];
+                        }
+                        
+                        // Update the position
+                        item.element.style.left = item.x + 'px';
+                        item.element.style.top = item.y + 'px';
+                    });
+                    
+                    // Keep animating
+                    requestAnimationFrame(animateNames);
                 }
                 
                 // Start the SSE connection
                 initEventSource();
+                
+                // Handle window resize
+                window.addEventListener('resize', () => {
+                    // Ensure names are still within bounds after resize
+                    const containerWidth = screensaverContainer.clientWidth;
+                    const containerHeight = screensaverContainer.clientHeight;
+                    
+                    participantElements.forEach(item => {
+                        item.x = Math.min(item.x, containerWidth - item.width);
+                        item.y = Math.min(item.y, containerHeight - item.height);
+                    });
+                });
             });
         </script>
     </body>
