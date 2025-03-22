@@ -3,14 +3,19 @@
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Griftless</title>
+        <meta name="description" content="Griftless - Engineering discussions without the hustle culture. A technical meetup focused on genuine knowledge sharing.">
+        <meta name="keywords" content="engineering, technical meetup, software development, programming">
+        <meta name="author" content="Hamish Bultitude">
+        <title>Griftless - Engineering Meetup</title>
         <link rel="stylesheet" href="reset.css">
         <link rel="stylesheet" href="index.css">
+        <link rel="icon" href="favicon.ico" type="image/x-icon">
     </head>
     <body>
         <header>
             <table class="header">
-                <tbody><tr>
+                <tbody>
+                <tr>
                   <td colspan="2" rowspan="2" class="width-auto">
                     <h1 class="title">Griftless</h1>
                     <span class="subtitle">Engineering discussions without the hustle culture</span>
@@ -20,7 +25,7 @@
                 </tr>
                 <tr>
                   <th>Updated</th>
-                  <td class="width-min"><time style="white-space: pre;">2024-10-22</time></td>
+                  <td class="width-min"><time datetime="2024-10-22">2024-10-22</time></td>
                 </tr>
                 <tr>
                   <th class="width-min">Author</th>
@@ -30,20 +35,20 @@
                 </tr>
               </tbody></table>
         </header>
-        <nav>
+        <nav aria-label="Main navigation">
             <a href="#about">About</a>
             <a href="#events">Events</a>
             <a href="#contact">Contact</a>
         </nav>
-        <div class="container">
-            <section id="about">
-                <h2>About Us</h2>
-                <p>A meetup getting back to the roots of why we love engineering. No "build in public" / "AI" / "hustle culture"
-                    <b>grifting</b> -- just sharing knowledge amongst likeminded (and motivated) individuals.
+        <main class="container">
+            <section id="about" aria-labelledby="about-heading">
+                <h2 id="about-heading">About Us</h2>
+                <p>A meetup getting back to the roots of why we love engineering. No
+                    <b>grifting</b> — just sharing knowledge amongst likeminded individuals.
                 </p>
                 <h3>What this is:</h3>
                 <ul>
-                    <li>Technical discussions in an low-key setting</li>
+                    <li>Technical discussions in a low-key setting</li>
                     <li>Show something you learned or built recently</li>
                     <li>Share problems you solved (or are stuck on)</li>
                     <li>Talk about tools, patterns, or languages you find interesting</li>
@@ -52,30 +57,29 @@
                 <h3>What this isn't:</h3>
                 <ul>
                     <li>No pitch practice</li>
-                    <li>No "leveraging AI"</li>
                     <li>No "bootcamps" or "anyone can code"</li>
                     <li>No hustle culture</li>
                 </ul>
-                <h3>Most importantly, you must know someone to join</h3>
             </section>
-            <hr></hr>
-            <section id="events">
-                <h2>Events</h2>
+            <hr>
+            <section id="events" aria-labelledby="events-heading">
+                <h2 id="events-heading">Events</h2>
                 <div class="event">
                     <p>
                         <strong>Location:</strong> Provided privately to members.
                     </p>
                 </div>
                 <table>
+                    <caption class="sr-only">Upcoming Meetups</caption>
                     <thead>
                         <tr>
-                            <th class="width-min">
+                            <th scope="col" class="width-min">
                                 Meetup No.
                             </th>
-                            <th class="width-min">
+                            <th scope="col" class="width-min">
                                 Date
                             </th>
-                            <th class="width-min">
+                            <th scope="col" class="width-min">
                                 Time
                             </th>
                         </tr>
@@ -96,13 +100,28 @@
                 </table>
             </section>
             <hr>
-            <section id="contact">
-                <h2>Contact</h2>
-                <p>Email: hamishgrahambultitude@gmail.com</p>
+            <section id="contact" aria-labelledby="contact-heading">
+                <h2 id="contact-heading">Contact</h2>
+                <p>Email: <a href="mailto:hamishgrahambultitude@gmail.com">hamishgrahambultitude@gmail.com</a></p>
                 <p>Note that joining is on an invite only basis. Email me if you think you fit the bill otherwise.</p>
             </section>
+        </main>
+        <footer>
             <hr>
-            Thanks to <a href="https://github.com/owickstrom/the-monospace-web">github.com/owickstrom/the-monospace-web</a> for the css.
-        </div>
+            <p>Thanks to <a href="https://github.com/owickstrom/the-monospace-web" target="_blank" rel="noopener noreferrer">github.com/owickstrom/the-monospace-web</a> for the css.</p>
+        </footer>
+        <style>
+            .sr-only {
+              position: absolute;
+              width: 1px;
+              height: 1px;
+              padding: 0;
+              margin: -1px;
+              overflow: hidden;
+              clip: rect(0, 0, 0, 0);
+              white-space: nowrap;
+              border-width: 0;
+            }
+        </style>
     </body>
 </html>
