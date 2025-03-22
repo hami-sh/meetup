@@ -824,33 +824,40 @@ label input {
 
 .speaker-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-  gap: 20px;
-  margin-top: 20px;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 25px;
+  margin-top: 25px;
 }
 
 .speaker-card {
   border: var(--border-thickness) solid var(--text-color);
-  padding: 15px;
+  border-radius: 8px;
+  padding: 20px;
   display: flex;
   flex-direction: column;
+  background-color: var(--background-color);
+  /* Force exact same height for all cards */
+  min-height: 400px;
 }
 
 .speaker-image {
   width: 100%;
-  height: 150px;
+  /* Fixed height for all image containers */
+  height: 250px;
   overflow: hidden;
-  margin-bottom: 15px;
+  margin-bottom: 20px;
   display: flex;
   justify-content: center;
   align-items: center;
-  border: var(--border-thickness) solid var(--text-color-alt);
+  border: var(--border-thickness) solid var(--text-color);
+  border-radius: 6px;
+  background-color: var(--background-color-alt);
 }
 
 .speaker-image img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
 }
 
 .placeholder-image {
@@ -865,16 +872,25 @@ label input {
 
 .speaker-info {
   flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  padding: 5px;
 }
 
 .speaker-name {
-  font-size: 1.1rem;
-  margin-bottom: 5px;
+  font-size: 1.2rem;
+  margin-bottom: 10px;
+  font-weight: var(--font-weight-bold);
+  border-bottom: 2px solid var(--text-color);
+  padding-bottom: 5px;
+  width: 100%;
 }
 
 .speaker-topic {
   font-style: italic;
   color: var(--text-color-alt);
+  line-height: 1.4;
 }
 `;
 
