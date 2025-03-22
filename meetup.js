@@ -3,18 +3,64 @@ import { sqlite } from "https://esm.town/v/std/sqlite";
 // Initialize the database schema if not exists
 async function initializeDatabase() {
   try {
-    // Create the table for registrations
-    await sqlite.execute({
-      sql: `
-        CREATE TABLE IF NOT EXISTS registrations (
-          id INTEGER PRIMARY KEY AUTOINCREMENT,
-          timestamp TEXT NOT NULL DEFAULT (datetime('now')),
-          name TEXT NOT NULL,
-          email TEXT NOT NULL
-        )
-      `,
+    // Check if the table exists first
+    const tableExists = await sqlite.execute({
+      sql: `SELECT name FROM sqlite_master WHERE type='table' AND name='registrations'`,
       args: {},
     });
+
+    if (tableExists.rows.length === 0) {
+      // Create the table for registrations with all columns
+      await sqlite.execute({
+        sql: `
+          CREATE TABLE IF NOT EXISTS registrations (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            timestamp TEXT NOT NULL DEFAULT (datetime('now')),
+            name TEXT NOT NULL,
+            email TEXT NOT NULL,
+            is_speaker BOOLEAN DEFAULT 0,
+            topic TEXT,
+            profile_pic TEXT
+          )
+        `,
+        args: {},
+      });
+    } else {
+      // Check if the topic column exists
+      const columnCheck = await sqlite.execute({
+        sql: `PRAGMA table_info(registrations)`,
+        args: {},
+      });
+      
+      const columns = columnCheck.rows.map(row => row[1]); // Column name is at index 1
+      
+      // Add topic column if it doesn't exist
+      if (!columns.includes('topic')) {
+        await sqlite.execute({
+          sql: `ALTER TABLE registrations ADD COLUMN topic TEXT`,
+          args: {},
+        });
+        console.log("Added topic column to registrations table");
+      }
+      
+      // Add is_speaker column if it doesn't exist
+      if (!columns.includes('is_speaker')) {
+        await sqlite.execute({
+          sql: `ALTER TABLE registrations ADD COLUMN is_speaker BOOLEAN DEFAULT 0`,
+          args: {},
+        });
+        console.log("Added is_speaker column to registrations table");
+      }
+      
+      // Add profile_pic column if it doesn't exist
+      if (!columns.includes('profile_pic')) {
+        await sqlite.execute({
+          sql: `ALTER TABLE registrations ADD COLUMN profile_pic TEXT`,
+          args: {},
+        });
+        console.log("Added profile_pic column to registrations table");
+      }
+    }
   } catch (error) {
     console.error("Database initialization error:", error);
   }
@@ -23,18 +69,90 @@ async function initializeDatabase() {
 // Get all registrations from the database
 async function getAllRegistrations() {
   try {
+    // First check if the necessary columns exist
+    const columnCheck = await sqlite.execute({
+      sql: `PRAGMA table_info(registrations)`,
+      args: {},
+    });
+    
+    const columns = columnCheck.rows.map(row => row[1]);
+    
+    // Build the SELECT statement based on available columns
+    const selectColumns = ['id', 'name', 'email'];
+    if (columns.includes('is_speaker')) selectColumns.push('is_speaker');
+    if (columns.includes('topic')) selectColumns.push('topic');
+    if (columns.includes('profile_pic')) selectColumns.push('profile_pic');
+    
+    const columnString = selectColumns.join(', ');
+    
     const result = await sqlite.execute({
-      sql: "SELECT id, name, email FROM registrations ORDER BY timestamp DESC",
+      sql: `SELECT ${columnString} FROM registrations ORDER BY timestamp DESC`,
       args: {},
     });
 
-    return result.rows.map(row => ({
-      id: row[0],
-      name: row[1],
-      email: row[2],
-    }));
+    return result.rows.map(row => {
+      let idx = 0;
+      const registration = {
+        id: row[idx++],
+        name: row[idx++],
+        email: row[idx++]
+      };
+      
+      if (columns.includes('is_speaker')) registration.is_speaker = row[idx++] === 1;
+      if (columns.includes('topic')) registration.topic = row[idx++];
+      if (columns.includes('profile_pic')) registration.profile_pic = row[idx++];
+      
+      return registration;
+    });
   } catch (error) {
     console.error("Error fetching registrations:", error);
+    return [];
+  }
+}
+
+// Get only speaker registrations
+async function getSpeakers() {
+  try {
+    // First check if the necessary columns exist using the prepared schema
+    const columnCheck = await sqlite.execute({
+      sql: `PRAGMA table_info(registrations)`,
+      args: {},
+    });
+    
+    const columns = columnCheck.rows.map(row => row[1]);
+    
+    // If topic or is_speaker columns don't exist, return empty array
+    if (!columns.includes('topic') || !columns.includes('is_speaker')) {
+      console.log("Required columns missing for speaker query, returning empty array");
+      return [];
+    }
+    
+    // Check which columns we can select
+    const selectColumns = ['id', 'name'];
+    if (columns.includes('topic')) selectColumns.push('topic');
+    if (columns.includes('profile_pic')) selectColumns.push('profile_pic');
+    
+    const columnString = selectColumns.join(', ');
+    
+    const result = await sqlite.execute({
+      sql: `SELECT ${columnString} FROM registrations WHERE is_speaker = 1 ORDER BY timestamp DESC`,
+      args: {},
+    });
+
+    return result.rows.map(row => {
+      let idx = 0;
+      const speaker = {
+        id: row[idx++],
+        name: row[idx++]
+      };
+      
+      if (columns.includes('topic')) speaker.topic = row[idx++];
+      if (columns.includes('profile_pic')) speaker.profile_pic = row[idx++];
+      
+      return speaker;
+    });
+  } catch (error) {
+    console.error("Error fetching speakers:", error);
     return [];
   }
 }
@@ -78,17 +196,29 @@ async function handleRegistrationSubmission(req) {
 
   try {
     const body = await req.json();
-    const { name, email } = body;
+    const { name, email, is_speaker, topic, profile_pic } = body;
 
     // Validate inputs
     if (!name || !email) {
       return new Response("Name and email are required", { status: 400 });
     }
 
+    // Validate speaker info if registering as a speaker
+    if (is_speaker && !topic) {
+      return new Response("Topic is required for speakers", { status: 400 });
+    }
+
     // Insert the new registration into the database
     await sqlite.execute({
-      sql: `INSERT INTO registrations (name, email) VALUES (:name, :email)`,
-      args: { name, email },
+      sql: `INSERT INTO registrations (name, email, is_speaker, topic, profile_pic) 
+            VALUES (:name, :email, :is_speaker, :topic, :profile_pic)`,
+      args: { 
+        name, 
+        email, 
+        is_speaker: is_speaker ? 1 : 0, 
+        topic: topic || null, 
+        profile_pic: profile_pic || null 
+      },
     });
 
     return new Response(JSON.stringify({ success: true }), {
@@ -103,31 +233,78 @@ async function handleRegistrationSubmission(req) {
 // Handle SSE connections for real-time updates
 function handleSSEUpdates() {
   const encoder = new TextEncoder();
-
+  
   // Create a readable stream for SSE
   const stream = new ReadableStream({
     async start(controller) {
+      let isClosed = false;
+      
       // Send initial data
-      const registrations = await getAllRegistrations();
-      controller.enqueue(encoder.encode(`data: ${JSON.stringify({ registrations })}\n\n`));
+      try {
+        const registrations = await getAllRegistrations();
+        if (!isClosed) {
+          controller.enqueue(encoder.encode(`data: ${JSON.stringify({ registrations })}\n\n`));
+        }
+      } catch (error) {
+        console.error("Error sending initial SSE data:", error);
+        if (!isClosed) {
+          try {
+            controller.close();
+            isClosed = true;
+          } catch (closeError) {
+            console.error("Error closing controller:", closeError);
+          }
+        }
+        return;
+      }
 
       // Check for updates every 3 seconds
       const intervalId = setInterval(async () => {
+        if (isClosed) {
+          clearInterval(intervalId);
+          return;
+        }
+        
         try {
           const updatedRegistrations = await getAllRegistrations();
-          controller.enqueue(encoder.encode(`data: ${JSON.stringify({ registrations: updatedRegistrations })}\n\n`));
+          
+          // Check if the controller can still enqueue data
+          if (!isClosed) {
+            try {
+              controller.enqueue(encoder.encode(`data: ${JSON.stringify({ 
+                registrations: updatedRegistrations
+              })}\n\n`));
+            } catch (enqueueError) {
+              console.log("Client disconnected, closing SSE stream");
+              isClosed = true;
+              clearInterval(intervalId);
+            }
+          }
         } catch (error) {
-          console.error("Error sending SSE update:", error);
-          clearInterval(intervalId);
-          controller.close();
+          console.error("Error fetching data for SSE update:", error);
+          if (!isClosed) {
+            try {
+              controller.close();
+              isClosed = true;
+            } catch (closeError) {
+              // Already closed or invalid controller, just clean up
+            }
+            clearInterval(intervalId);
+          }
         }
       }, 3000);
 
       // Cleanup when the connection is closed
       return () => {
+        isClosed = true;
         clearInterval(intervalId);
       };
     },
+
+    cancel() {
+      // This is called when the client disconnects
+      console.log("SSE stream cancelled by client");
+    }
   });
 
   // Return the SSE response
@@ -620,7 +797,86 @@ label input {
   clip: rect(0, 0, 0, 0);
   white-space: nowrap;
   border-width: 0;
-}`;
+}
+
+/* Speaker related styles */
+.speaker-checkbox {
+  display: flex;
+  align-items: center;
+}
+
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+}
+
+.checkbox-label input {
+  margin-right: 10px;
+}
+
+.speaker-fields {
+  margin-top: 15px;
+  padding: 15px;
+  background-color: var(--background-color);
+  border: var(--border-thickness) solid var(--text-color);
+}
+
+.speaker-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 20px;
+  margin-top: 20px;
+}
+
+.speaker-card {
+  border: var(--border-thickness) solid var(--text-color);
+  padding: 15px;
+  display: flex;
+  flex-direction: column;
+}
+
+.speaker-image {
+  width: 100%;
+  height: 150px;
+  overflow: hidden;
+  margin-bottom: 15px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  border: var(--border-thickness) solid var(--text-color-alt);
+}
+
+.speaker-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.placeholder-image {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background-color: var(--background-color-alt);
+  color: var(--text-color-alt);
+}
+
+.speaker-info {
+  flex: 1;
+}
+
+.speaker-name {
+  font-size: 1.1rem;
+  margin-bottom: 5px;
+}
+
+.speaker-topic {
+  font-style: italic;
+  color: var(--text-color-alt);
+}
+`;
 
 // HTML content for the main page (updated with registration form)
 const HTML_CONTENT = `<!DOCTYPE html>
@@ -663,6 +919,7 @@ const HTML_CONTENT = `<!DOCTYPE html>
         <nav aria-label="Main navigation">
             <a href="#about">About</a>
             <a href="#events">Events</a>
+            <a href="#speakers">Speakers</a>
             <a href="#register">Register</a>
             <a href="#contact">Contact</a>
         </nav>
@@ -726,6 +983,32 @@ const HTML_CONTENT = `<!DOCTYPE html>
                 </table>
             </section>
             <hr>
+            <section id="speakers" aria-labelledby="speakers-heading">
+                <h2 id="speakers-heading">Upcoming Speakers</h2>
+                <p>Check out who will be speaking at our upcoming meetups.</p>
+                
+                <div class="speaker-grid">
+                    <div class="speaker-card">
+                        <div class="speaker-image">
+                            <img src="https://avatars.githubusercontent.com/u/18391419?v=4" alt="Hamish Bultitude">
+                        </div>
+                        <div class="speaker-info">
+                            <h3 class="speaker-name">Hamish Bultitude</h3>
+                            <p class="speaker-topic">Baby's First CVE 10</p>
+                        </div>
+                    </div>
+                    <div class="speaker-card">
+                        <div class="speaker-image">
+                            <img src="https://avatars.githubusercontent.com/u/5368490?v=4" alt="Max Bo">
+                        </div>
+                        <div class="speaker-info">
+                            <h3 class="speaker-name">Max Bo</h3>
+                            <p class="speaker-topic">ABCD</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+            <hr>
             <section id="register" aria-labelledby="register-heading">
                 <h2 id="register-heading">Register Interest</h2>
                 <p>Submit your details to register interest in attending future meetups.</p>
@@ -740,6 +1023,26 @@ const HTML_CONTENT = `<!DOCTYPE html>
                         <div class="form-group">
                             <label for="email">Email:</label>
                             <input type="email" id="email" name="email" required>
+                        </div>
+                        
+                        <div class="form-group speaker-checkbox">
+                            <label for="is-speaker" class="checkbox-label">
+                                <input type="checkbox" id="is-speaker" name="is_speaker">
+                                Register as a speaker
+                            </label>
+                        </div>
+                        
+                        <div id="speaker-fields" class="speaker-fields" style="display: none;">
+                            <div class="form-group">
+                                <label for="topic">Topic:</label>
+                                <input type="text" id="topic" name="topic" placeholder="What would you like to speak about?">
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="profile-pic">Profile Picture URL:</label>
+                                <input type="url" id="profile-pic" name="profile_pic" placeholder="Link to your profile picture">
+                                <small>Please provide a direct link to your profile image (Optional)</small>
+                            </div>
                         </div>
                         
                         <button type="submit" class="submit-btn">Register Interest</button>
@@ -770,6 +1073,17 @@ const HTML_CONTENT = `<!DOCTYPE html>
                 const registrationForm = document.getElementById('registration-form');
                 const connectionStatus = document.getElementById('connection-status');
                 const participantList = document.getElementById('participant-list');
+                const isSpeakerCheckbox = document.getElementById('is-speaker');
+                const speakerFields = document.getElementById('speaker-fields');
+                
+                // Toggle speaker fields visibility
+                isSpeakerCheckbox.addEventListener('change', function() {
+                    speakerFields.style.display = this.checked ? 'block' : 'none';
+                    
+                    // Make topic required only if registering as speaker
+                    const topicInput = document.getElementById('topic');
+                    topicInput.required = this.checked;
+                });
                 
                 // Handle form submission
                 registrationForm.addEventListener('submit', async function(e) {
@@ -777,12 +1091,22 @@ const HTML_CONTENT = `<!DOCTYPE html>
                     
                     const nameInput = document.getElementById('name');
                     const emailInput = document.getElementById('email');
+                    const isSpeaker = document.getElementById('is-speaker').checked;
+                    const topicInput = document.getElementById('topic');
+                    const profilePicInput = document.getElementById('profile-pic');
                     
                     const name = nameInput.value.trim();
                     const email = emailInput.value.trim();
+                    const topic = topicInput.value.trim();
+                    const profilePic = profilePicInput.value.trim();
                     
                     if (!name || !email) {
-                        alert('Please fill out all fields');
+                        alert('Please fill out all required fields');
+                        return;
+                    }
+                    
+                    if (isSpeaker && !topic) {
+                        alert('Topic is required for speakers');
                         return;
                     }
                     
@@ -792,13 +1116,23 @@ const HTML_CONTENT = `<!DOCTYPE html>
                             headers: {
                                 'Content-Type': 'application/json',
                             },
-                            body: JSON.stringify({ name, email }),
+                            body: JSON.stringify({ 
+                                name, 
+                                email, 
+                                is_speaker: isSpeaker,
+                                topic: isSpeaker ? topic : null,
+                                profile_pic: isSpeaker ? profilePic : null
+                            }),
                         });
                         
                         if (response.ok) {
                             // Clear the form on success
                             nameInput.value = '';
                             emailInput.value = '';
+                            document.getElementById('is-speaker').checked = false;
+                            topicInput.value = '';
+                            profilePicInput.value = '';
+                            speakerFields.style.display = 'none';
                             alert('Registration submitted successfully!');
                         } else {
                             const data = await response.text();
